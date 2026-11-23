@@ -1,0 +1,2 @@
+// O lexer rejeita o símbolo @.
+print(2 @ 3);

@@ -1,0 +1,18 @@
+// Implementação iterativa para conferir o resultado do exemplo do enunciado.
+func fatorial(numero: int): int {
+    var produto: int = 1;
+    for (var fator: int = 2; fator <= numero; fator = fator + 1) {
+        produto = produto * fator;
+    }
+    return produto;
+}
+
+var entrada: int;
+print("Digite um inteiro entre 0 e 20:");
+input(entrada);
+
+if (entrada >= 0 && entrada <= 20) {
+    print("O fatorial de " + entrada + " é " + fatorial(entrada));
+} else {
+    print("Entrada fora da faixa de 0 a 20.");
+}
