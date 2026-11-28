@@ -24,57 +24,73 @@ static const Palavra reservadas[] = {
     {"string", TK_STRING}, {"true", TK_TRUE}, {"false", TK_FALSE}
 };
 
+/* static bool: função auxiliar disponível somente neste arquivo. Ela informa se
+ * um caractere é um dígito decimal usado pelo lexer. */
 static bool digito(char c)
 {
     return c >= '0' && c <= '9';
 }
 
+/* static bool: verifica se o caractere pode iniciar ou continuar um nome. */
 static bool letra(char c)
 {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
 }
 
+/* static char: consome um caractere e atualiza linha ou coluna. */
 static char avancar(Leitor *leitor)
 {
     char c = *leitor->atual++;
+    /* if: acabou uma linha, então reinicia a coluna em 1. */
     if (c == '\n') {
         ++leitor->linha;
         leitor->coluna = 1;
+    /* else if: avança a coluna apenas uma vez para cada início de caractere UTF-8. */
     } else if (((unsigned char)c & 0xc0) != 0x80) {
-        /* Em UTF-8, os bytes de continuação pertencem ao caractere anterior. */
         ++leitor->coluna;
     }
     return c;
 }
 
+/* static void: esta função avança pelo texto até encontrar o início de um token. */
 static void ignorar(Leitor *leitor)
 {
+    /* for: repete até encontrar conteúdo que não seja espaço ou comentário. */
     for (;;) {
         const char *atual = leitor->atual;
+        /* if: ignora cada caractere de espaço em branco. */
         if (*atual && strchr(" \r\t\n", *atual)) {
             avancar(leitor);
+        /* else if: comentários // continuam até o fim da linha. */
         } else if (strncmp(atual, "//", 2) == 0) {
+            /* while não é for/if/else, mas avança até encontrar a quebra de linha. */
             while (*leitor->atual && *leitor->atual != '\n')
                 avancar(leitor);
+        /* else if: comentário iniciado por barra e asterisco exige fechamento com asterisco e barra. */
         } else if (strncmp(atual, "/*", 2) == 0) {
             Token inicio = {0, "/*", NULL, leitor->linha, leitor->coluna};
             avancar(leitor);
             avancar(leitor);
+            /* while: percorre o interior até encontrar o fechamento. */
             while (*leitor->atual && strncmp(leitor->atual, "*/", 2) != 0)
                 avancar(leitor);
+            /* if: sem fechamento é um erro léxico na abertura do comentário. */
             if (!*leitor->atual)
                 erro("léxico", &inicio, "comentário sem fechamento");
             avancar(leitor);
             avancar(leitor);
+        /* else: não havia espaço ou comentário, então termina o pulo. */
         } else {
             return;
         }
     }
 }
 
+/* static char: transforma uma sequência de escape, como \\n, em um caractere real. */
 static char ler_escape(Leitor *leitor, const Token *token)
 {
     char c = *leitor->atual;
+    /* if: avança apenas quando existe um caractere após a barra. */
     if (c)
         avancar(leitor);
     switch (c) {

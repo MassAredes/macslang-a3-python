@@ -1,22 +1,29 @@
 #include "compilador.h"
 
 /* Esta saída ajuda a estudar a árvore antes de passar pela semântica. */
+/* static void: cria recuo visual sem retornar valor. */
 static void recuo(unsigned nivel)
 {
+    /* for: imprime dois espaços para cada nível abaixo da raiz. */
     for (unsigned i = 0; i < nivel; ++i)
         fputs("  ", stdout);
 }
 
+/* static void: visita recursivamente um nó de expressão. */
 static void mostrar_expr(const Expr *expr, unsigned nivel)
 {
     static const char *nomes[] = {"Literal", "Variavel", "Chamada", "Unario", "Binario"};
+    /* if: não há nada para mostrar quando o ponteiro está vazio. */
     if (!expr)
         return;
     recuo(nivel);
     printf("%s ", nomes[expr->classe]);
     mostrar_texto(stdout, expr->token->texto, '\'');
     printf(" (linha %zu)\n", expr->token->linha);
+
+    /* if/else: chamadas mostram argumentos em lista; demais nós mostram lados esquerdo e direito. */
     if (expr->classe == E_CHAMADA) {
+        /* for: percorre argumentos ligados pelo campo prox. */
         for (const Expr *arg = expr->esq; arg; arg = arg->prox)
             mostrar_expr(arg, nivel + 1);
     } else {
@@ -25,6 +32,7 @@ static void mostrar_expr(const Expr *expr, unsigned nivel)
     }
 }
 
+/* static void: visita recursivamente um comando da árvore. */
 static void mostrar_cmd(const Cmd *cmd, unsigned nivel)
 {
     static const char *nomes[] = {

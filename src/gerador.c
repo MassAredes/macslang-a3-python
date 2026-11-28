@@ -11,28 +11,36 @@ static const char *iniciais[] = {"", "INT64_C(0)", "0.0", "0", "false", "\"\""};
 static void expressao(FILE *saida, const Expr *expr);
 static void comando(FILE *saida, const Cmd *cmd, unsigned nivel);
 
+/* static void recuar: escreve espaços conforme o nível de cada bloco C. */
 static void recuar(FILE *saida, unsigned nivel)
 {
+    /* for: repete a escrita de quatro espaços para cada nível. */
     for (unsigned i = 0; i < nivel; ++i)
         fputs("    ", saida);
 }
 
+/* static void string_c: protege aspas, barras e caracteres especiais em string C. */
 static void string_c(FILE *saida, const char *valor)
 {
     fputc('"', saida);
+    /* for: percorre cada caractere até encontrar o terminador '\\0'. */
     for (; *valor; ++valor) {
         unsigned char c = (unsigned char)*valor;
+        /* if: aspas, barras ou ? precisam de barra de escape. */
         if (c == '"' || c == '\\' || c == '?') {
             fputc('\\', saida);
             fputc(c, saida);
+        /* else if: converte caracteres de controle em escapes conhecidos. */
         } else if (c == '\n') {
             fputs("\\n", saida);
         } else if (c == '\r') {
             fputs("\\r", saida);
         } else if (c == '\t') {
             fputs("\\t", saida);
+        /* else if: imprime caracteres não visíveis em formato octal. */
         } else if (c < 32 || c == 127) {
             fprintf(saida, "\\%03o", (unsigned)c);
+        /* else: caracteres normais podem ser escritos diretamente. */
         } else {
             fputc(c, saida);
         }
@@ -103,8 +111,10 @@ static void binario(FILE *saida, const Expr *expr)
     }
 }
 
+/* static void expressao: escolhe como escrever cada tipo de nó da AST em C. */
 static void expressao(FILE *saida, const Expr *expr)
 {
+    /* if: envolve o inteiro em conversão para double quando a semântica marcou. */
     if (expr->promover_real)
         fputs("((double)", saida);
 
@@ -117,8 +127,10 @@ static void expressao(FILE *saida, const Expr *expr)
         break;
     case E_CHAMADA:
         fprintf(saida, "macs_funcao_%u(", expr->id);
+        /* for: escreve todos os argumentos separados por vírgula. */
         for (const Expr *arg = expr->esq; arg; arg = arg->prox) {
             expressao(saida, arg);
+            /* if: a vírgula só aparece quando ainda existe argumento seguinte. */
             if (arg->prox)
                 fputs(", ", saida);
         }
@@ -134,16 +146,22 @@ static void expressao(FILE *saida, const Expr *expr)
         break;
     }
 
+    /* if: fecha o parêntese da conversão iniciada no começo desta função. */
     if (expr->promover_real)
         fputc(')', saida);
 }
 
+/* static void declaracao_ou_atribuicao: escreve uma declaração ou uma atribuição C. */
 static void declaracao_ou_atribuicao(FILE *saida, const Cmd *cmd)
 {
+    /* if: um trecho nulo não precisa ser escrito. */
     if (!cmd)
         return;
+
+    /* if/else: declaração inclui tipo e nome; atribuição inclui apenas o destino. */
     if (cmd->classe == C_VAR) {
         fprintf(saida, "%s macs_var_%u = ", tipos_c[cmd->tipo], cmd->id);
+        /* if/else: usa o inicializador escrito ou o valor padrão do tipo. */
         if (cmd->expr)
             expressao(saida, cmd->expr);
         else
@@ -181,13 +199,16 @@ static void bloco(FILE *saida, const Cmd *cmd, unsigned nivel)
     fputs("}\n", saida);
 }
 
+/* static void comando: traduz um comando da AST para uma ou mais linhas C. */
 static void comando(FILE *saida, const Cmd *cmd, unsigned nivel)
 {
+    /* if/else: bloco já possui uma rotina própria e não entra no switch. */
     if (cmd->classe == C_BLOCO) {
         bloco(saida, cmd, nivel);
         return;
     }
     recuar(saida, nivel);
+
     switch (cmd->classe) {
     case C_VAR: case C_ATRIB:
         declaracao_ou_atribuicao(saida, cmd);
@@ -197,6 +218,7 @@ static void comando(FILE *saida, const Cmd *cmd, unsigned nivel)
         imprimir(saida, cmd->expr);
         break;
     case C_INPUT:
+        /* Lê o tipo adequado e atribui o resultado à variável indicada. */
         fprintf(saida, "macs_var_%u = macs_ler_%s();\n",
                 cmd->destino->id, nome_tipo(cmd->destino->tipo));
         break;
@@ -210,10 +232,12 @@ static void comando(FILE *saida, const Cmd *cmd, unsigned nivel)
         fputs(";\n", saida);
         break;
     case C_IF: case C_WHILE:
+        /* if/else da expressão ternária escolhe if (...) ou while (...) no C. */
         fputs(cmd->classe == C_IF ? "if (" : "while (", saida);
         expressao(saida, cmd->expr);
         fputs(")\n", saida);
         bloco(saida, cmd->corpo, nivel);
+        /* if: escreve else somente quando a AST possui ramo alternativo. */
         if (cmd->alternativa) {
             recuar(saida, nivel);
             fputs("else\n", saida);
@@ -224,6 +248,7 @@ static void comando(FILE *saida, const Cmd *cmd, unsigned nivel)
         fputs("for (", saida);
         declaracao_ou_atribuicao(saida, cmd->inicio);
         fputs("; ", saida);
+        /* if: mantém a condição vazia quando o for do MACSLang não a escreveu. */
         if (cmd->expr)
             expressao(saida, cmd->expr);
         fputs("; ", saida);

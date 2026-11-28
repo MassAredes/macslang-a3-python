@@ -15,6 +15,7 @@ typedef struct {
     Modo modo;
 } Opcoes;
 
+/* static void: mostra as opções, mas não devolve um valor ao chamador. */
 static void ajuda(void)
 {
     puts("Uso: macsc arquivo.macs [opção]\n"
@@ -31,21 +32,26 @@ static void ajuda(void)
 static Opcoes ler_opcoes(int argc, wchar_t **argv)
 {
     Opcoes opcoes = {0};
+    /* for: percorre cada argumento passado na linha de comando. */
     for (int i = 1; i < argc; ++i) {
         const wchar_t *arg = argv[i];
+        /* if/else if: reconhece ajuda, arquivo-fonte e opções iniciadas por -. */
         if (!wcscmp(arg, L"--help") || !wcscmp(arg, L"-h")) {
             ajuda();
             exit(EXIT_SUCCESS);
         }
         if (arg[0] != L'-') {
+            /* if: não permite informar dois arquivos-fonte. */
             if (opcoes.fonte)
                 falha("informe um único arquivo-fonte");
             opcoes.fonte = arg;
             continue;
         }
 
+        /* if: permite apenas uma opção de modo por execução. */
         if (opcoes.modo != NORMAL)
             falha("use apenas uma opção por execução");
+
         if (!wcscmp(arg, L"--tokens"))
             opcoes.modo = TOKENS;
         else if (!wcscmp(arg, L"--ast"))
@@ -54,13 +60,16 @@ static Opcoes ler_opcoes(int argc, wchar_t **argv)
             opcoes.modo = CHECAR;
         else if (!wcscmp(arg, L"--emit-c") || !wcscmp(arg, L"-o")) {
             opcoes.modo = !wcscmp(arg, L"-o") ? SAIDA : EMITIR_C;
+            /* if: a opção que escolhe saída precisa do argumento seguinte. */
             if (++i == argc)
                 falha("falta o caminho de saída");
             opcoes.saida = argv[i];
         } else {
+            /* else: qualquer texto iniciado por - não reconhecido gera erro. */
             falha("opção desconhecida. Use --help.");
         }
     }
+    /* if final: encerra se o usuário não informou o arquivo MACSLang. */
     if (!opcoes.fonte)
         falha("informe o arquivo-fonte .macs");
     return opcoes;

@@ -24,8 +24,10 @@ struct TextoGuardado {
 
 static struct TextoGuardado *textos = NULL;
 
+/* static void: percorre a lista de textos alocados e libera todos ao terminar o programa. */
 static void liberar_textos(void)
 {
+    /* while: continua enquanto existe pelo menos um texto registrado. */
     while (textos != NULL) {
         struct TextoGuardado *item = textos;
         textos = item->proximo;
@@ -35,8 +37,10 @@ static void liberar_textos(void)
 }
 
 #ifdef MACS_MEMORIA
+/* static void: verifica vazamentos no executável em modo de depuração. */
 static void conferir_memoria(void)
 {
+    /* if: relatório diferente é usado quando existem vazamentos. */
     if (_CrtDumpMemoryLeaks()) {
         fputs("[memoria] vazamento detectado no executável\n", stderr);
         _Exit(1);
@@ -45,6 +49,7 @@ static void conferir_memoria(void)
 }
 #endif
 
+/* void: prepara entrada e saída do console e registra limpezas automáticas. */
 void macs_iniciar(void)
 {
     SetConsoleOutputCP(CP_UTF8);
@@ -57,24 +62,29 @@ void macs_iniciar(void)
     atexit(liberar_textos);
 }
 
+/* static void: informa um erro de execução e encerra o programa. */
 static void falhar(const char *mensagem)
 {
     fprintf(stderr, "Erro de execução: %s\n", mensagem);
     exit(EXIT_FAILURE);
 }
 
+/* static char *: aloca memória ou chama falhar quando o espaço não está disponível. */
 static char *alocar(size_t tamanho)
 {
     char *memoria = malloc(tamanho);
+    /* if: NULL informa que a alocação de memória falhou. */
     if (memoria == NULL) {
         falhar("memória insuficiente");
     }
     return memoria;
 }
 
+/* static const char *: registra uma string alocada para ser liberada no final. */
 static const char *guardar(char *valor)
 {
     struct TextoGuardado *item = malloc(sizeof *item);
+    /* if: remove o texto já criado e encerra se não houver registro disponível. */
     if (item == NULL) {
         free(valor);
         falhar("memória insuficiente");

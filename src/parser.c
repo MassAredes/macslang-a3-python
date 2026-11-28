@@ -15,24 +15,30 @@ static const Token *avancar(Parser *p)
     return p->atual++;
 }
 
+/* static bool: verifica uma categoria opcional e só avança quando ela coincide. */
 static bool aceitar(Parser *p, int classe)
 {
+    /* if: sem correspondência, não altera o ponteiro atual. */
     if (p->atual->classe != classe)
         return false;
     avancar(p);
     return true;
 }
 
+/* static const Token *: exige uma categoria obrigatória e reporta a encontrada. */
 static const Token *exigir(Parser *p, int classe)
 {
+    /* if: interrompe o parser quando uma parte obrigatória está ausente. */
     if (p->atual->classe != classe)
         erro("sintático", p->atual, "esperado '%s', encontrado %s",
              nome_token(classe), p->atual->classe == TK_FIM ? "fim do arquivo" : p->atual->texto);
     return avancar(p);
 }
 
+/* static void: aumenta o nível de aninhamento e impede profundidade excessiva. */
 static void entrar(Parser *p)
 {
+    /* if: mais de 256 níveis indica entrada excessivamente profunda. */
     if (++p->profundidade > 256)
         erro("sintático", p->atual, "aninhamento além do limite (256 níveis)");
 }
@@ -85,12 +91,15 @@ static Expr *entre_parenteses(Parser *p)
     return valor;
 }
 
+/* static Expr *: monta uma chamada e liga cada argumento usando o campo prox. */
 static Expr *chamada(Parser *p, const Token *nome)
 {
     Expr *no = nova_expr(E_CHAMADA, nome);
     Expr **cauda = &no->esq;
     exigir(p, '(');
+    /* if: executa a leitura dos argumentos somente quando há algo antes de ). */
     if (p->atual->classe != ')') {
+        /* do/while: lê pelo menos um argumento e repete após cada vírgula. */
         do {
             *cauda = expressao(p);
             medir_altura(no, *cauda);
@@ -112,6 +121,7 @@ static Expr *primario(Parser *p)
         return entre_parenteses(p);
     case TK_NOME:
         avancar(p);
+        /* if/else: nome seguido de ( é chamada; sem ( é referência de variável. */
         if (p->atual->classe == '(')
             return chamada(p, token);
         return nova_expr(E_VARIAVEL, token);
@@ -120,8 +130,10 @@ static Expr *primario(Parser *p)
     }
 }
 
+/* static Expr *: trata operador unário ! ou - antes de ler um operando. */
 static Expr *unario(Parser *p)
 {
+    /* if: retorna ao primário quando não existe operador unário. */
     if (p->atual->classe != '!' && p->atual->classe != '-')
         return primario(p);
 
