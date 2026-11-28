@@ -1,0 +1,24 @@
+// Mistura os cinco tipos. O while soma três notas para calcular a média.
+var nome: string;
+print("Nome do estudante:");
+input(nome);
+
+var total: float = 0;
+var indice: int = 1;
+while (indice <= 3) {
+    var nota: float;
+    print("Nota " + indice + ":");
+    input(nota);
+    total = total + nota;
+    indice = indice + 1;
+}
+
+var media: float = total / 3;
+var aprovado: bool = media >= 6.0;
+var situacao: char = 'R';
+if (aprovado) {
+    situacao = 'A';
+}
+print(nome + " teve média " + media);
+print("Situação: " + situacao);
+print("Aprovado: " + aprovado);

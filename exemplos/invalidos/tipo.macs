@@ -1,0 +1,2 @@
+// O tipo do texto entra em conflito com o tipo int declarado.
+var idade: int = "sete";

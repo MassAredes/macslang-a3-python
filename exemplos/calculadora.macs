@@ -1,0 +1,14 @@
+// Entrada de inteiro, função com retorno e condição booleana.
+func dobro(valor: int): int {
+    return valor * 2;
+}
+
+var numero: int;
+print("Digite um inteiro:");
+input(numero);
+
+if (numero >= 0) {
+    print("Dobro: " + dobro(numero));
+} else {
+    print("Número negativo. Dobro: " + dobro(numero));
+}
